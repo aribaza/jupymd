@@ -105,7 +105,7 @@ async function discoverSystemPython(): Promise<KernelInfo[]> {
 
 	// Also try python3.x variants
 	for (let minor = 13; minor >= 8; minor--) {
-		candidates.push(Platform.isWin ? `python3.${minor}` : `python3.${minor}`);
+		candidates.push(`python3.${minor}`);
 	}
 
 	const results: KernelInfo[] = [];
@@ -226,10 +226,7 @@ async function discoverVenvDirs(): Promise<KernelInfo[]> {
 		);
 		for (const p of pythonPaths) {
 			const parts = p.split(path.sep);
-			const envName =
-				Platform.isWin
-					? parts[parts.length - 3]
-					: parts[parts.length - 3];
+			const envName = parts[parts.length - 3];
 			const result = await probeInterpreter(p, `venv: ${envName}`, "venv");
 			if (result) results.push(result);
 		}
