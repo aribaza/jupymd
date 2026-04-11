@@ -1,18 +1,15 @@
 import {App, PluginSettingTab, Setting, Notice} from "obsidian";
-import {CodeExecutor} from "./CodeExecutor";
 import JupyMDPlugin from "../main";
-import {validatePythonPath} from "../utils/pythonPathUtils";
 import {installLibs} from "../utils/helpers";
 import {runQuickSetup} from "../utils/quickSetup";
+import {KernelSelectorModal} from "./KernelSelector";
 
 export class JupyMDSettingTab extends PluginSettingTab {
 	plugin: JupyMDPlugin;
-	executor: CodeExecutor;
 
 	constructor(app: App, plugin: JupyMDPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
-		this.executor = new CodeExecutor(this.plugin, this.plugin.settings.pythonInterpreter, this.app);
 	}
 
 	display(): void {
@@ -41,7 +38,7 @@ export class JupyMDSettingTab extends PluginSettingTab {
 			});
 
 		const desc = document.createDocumentFragment();
-		desc.appendText("Select the Python interpreter. Requires restart to take effect.");
+		desc.appendText("Select the Python interpreter to use for code execution.");
 		desc.createEl("br");
 		desc.createEl("a", {
 			text: "Read manual setup guide.",
@@ -53,22 +50,16 @@ export class JupyMDSettingTab extends PluginSettingTab {
 			.setDesc(desc)
 			.addText((text) => {
 				text.setValue(this.plugin.settings.pythonInterpreter)
-				text.setPlaceholder("python3")
-				text.onChange(async (value) => {
-					const cleaned = value.trim();
-					const valid = await validatePythonPath(cleaned);
-					if (cleaned && !valid) {
-						new Notice("Invalid Python path")
-						return;
-					}
-					if (valid) {
-						new Notice("Valid Python path, saving interpreter location...")
-					}
-
-					this.plugin.settings.pythonInterpreter = cleaned;
-					await this.plugin.saveSettings();
-				})
+				text.inputEl.readOnly = true;
+				text.inputEl.addClass("jupymd-interpreter-display");
 			})
+			.addButton((btn) => {
+				btn.setButtonText("Select kernel")
+					.setCta()
+					.onClick(() => {
+						new KernelSelectorModal(this.app, this.plugin).open();
+					});
+			});
 
 		new Setting(containerEl)
 			.setName("Install required libraries")

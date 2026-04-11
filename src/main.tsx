@@ -8,6 +8,8 @@ import {createRoot} from "react-dom/client";
 import {PythonCodeBlock} from "./components/CodeBlock";
 import {getAbsolutePath, isNotebookPaired} from "./utils/helpers";
 import {getDefaultPythonPath} from "./utils/pythonPathUtils";
+import {KernelSelectorModal} from "./components/KernelSelector";
+import * as path from "path";
 import * as fs from "fs";
 
 export default class JupyMDPlugin extends Plugin {
@@ -15,6 +17,7 @@ export default class JupyMDPlugin extends Plugin {
 	executor: CodeExecutor;
 	fileSync: FileSync;
 	currentNotePath: string | null = null;
+	private kernelStatusBarItem: HTMLElement | null = null;
 
 	async onload() {
 		await this.loadSettings();
@@ -26,6 +29,13 @@ export default class JupyMDPlugin extends Plugin {
 
 		this.executor = new CodeExecutor(this, this.settings.pythonInterpreter, this.app);
 		this.fileSync = new FileSync(this.app, this.settings.pythonInterpreter, this.settings);
+
+		this.kernelStatusBarItem = this.addStatusBarItem();
+		this.kernelStatusBarItem.addClass("jupymd-kernel-status");
+		this.updateStatusBar();
+		this.kernelStatusBarItem.addEventListener("click", () => {
+			new KernelSelectorModal(this.app, this).open();
+		});
 
 		registerCommands(this);
 
@@ -152,6 +162,29 @@ export default class JupyMDPlugin extends Plugin {
 
 	async onunload() {
 		this.executor.cleanup();
+	}
+
+	/** Atomically swap the active Python interpreter without requiring a restart. */
+	async updateInterpreter(newPath: string): Promise<void> {
+		this.settings.pythonInterpreter = newPath;
+		await this.saveSettings();
+
+		// Restart the code executor with the new interpreter
+		this.executor.cleanup();
+		this.executor = new CodeExecutor(this, newPath, this.app);
+
+		// Reinitialise file sync with the new interpreter
+		this.fileSync = new FileSync(this.app, newPath, this.settings);
+
+		this.updateStatusBar();
+	}
+
+	private updateStatusBar(): void {
+		if (!this.kernelStatusBarItem) return;
+		const interpreter = this.settings.pythonInterpreter;
+		const label = interpreter ? path.basename(interpreter) : "No kernel";
+		this.kernelStatusBarItem.setText(`🐍 ${label}`);
+		this.kernelStatusBarItem.setAttr("aria-label", `Python kernel: ${interpreter || "not set"} — click to change`);
 	}
 
 	async loadSettings() {

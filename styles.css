@@ -201,3 +201,75 @@
 	border: none;
 	box-shadow: none;
 }
+
+/* ── Kernel selector status bar ───────────────────────────── */
+.jupymd-kernel-status {
+cursor: pointer;
+font-size: var(--font-ui-small);
+opacity: 0.85;
+}
+
+.jupymd-kernel-status:hover {
+opacity: 1;
+}
+
+/* ── Kernel selector modal suggestions ───────────────────── */
+.kernel-suggestion {
+display: flex;
+flex-direction: column;
+gap: 2px;
+padding: 2px 0;
+}
+
+.kernel-suggestion-top {
+display: flex;
+align-items: center;
+gap: 6px;
+}
+
+.kernel-suggestion-label {
+font-weight: 500;
+}
+
+.kernel-suggestion-badge {
+font-size: 0.7em;
+padding: 1px 5px;
+border-radius: 3px;
+text-transform: uppercase;
+letter-spacing: 0.04em;
+font-weight: 600;
+background-color: var(--background-modifier-border);
+color: var(--text-muted);
+}
+
+.kernel-badge-venv   { background-color: rgba(80, 160, 255, 0.18); color: #5090e0; }
+.kernel-badge-conda  { background-color: rgba(80, 200, 120, 0.18); color: #40a060; }
+.kernel-badge-pyenv  { background-color: rgba(200, 140, 60,  0.18); color: #b07030; }
+.kernel-badge-system { background-color: rgba(140, 120, 220, 0.18); color: #8070c0; }
+.kernel-badge-other  { background-color: var(--background-modifier-border); color: var(--text-muted); }
+
+.kernel-suggestion-bottom {
+display: flex;
+align-items: center;
+gap: 8px;
+font-size: 0.8em;
+color: var(--text-muted);
+}
+
+.kernel-suggestion-version {
+font-weight: 500;
+}
+
+.kernel-suggestion-path {
+overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+}
+
+/* ── Interpreter display field (read-only) ────────────────── */
+.jupymd-interpreter-display {
+cursor: default;
+color: var(--text-muted);
+font-family: var(--font-monospace);
+font-size: var(--font-ui-small);
+}
