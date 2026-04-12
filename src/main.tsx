@@ -18,6 +18,7 @@ export default class JupyMDPlugin extends Plugin {
 	fileSync: FileSync;
 	currentNotePath: string | null = null;
 	private kernelStatusBarItem: HTMLElement | null = null;
+	private settingTab: JupyMDSettingTab | null = null;
 
 	async onload() {
 		await this.loadSettings();
@@ -32,14 +33,15 @@ export default class JupyMDPlugin extends Plugin {
 
 		this.kernelStatusBarItem = this.addStatusBarItem();
 		this.kernelStatusBarItem.addClass("jupymd-kernel-status");
-		this.updateStatusBar();
+		void this.updateStatusBar();
 		this.kernelStatusBarItem.addEventListener("click", () => {
 			new KernelSelectorModal(this.app, this).open();
 		});
 
 		registerCommands(this);
 
-		this.addSettingTab(new JupyMDSettingTab(this.app, this));
+		this.settingTab = new JupyMDSettingTab(this.app, this);
+		this.addSettingTab(this.settingTab);
 
 		this.registerEvent(
 			this.app.vault.on("modify", async (file: TAbstractFile) => {
@@ -89,6 +91,21 @@ export default class JupyMDPlugin extends Plugin {
 					} catch (e) {
 						console.error("Failed to rename paired notebook:", e);
 					}
+				}
+			})
+		);
+
+		this.registerEvent(
+			this.app.workspace.on("file-open", () => {
+				void this.updateStatusBar();
+			})
+		);
+
+		this.registerEvent(
+			this.app.metadataCache.on("changed", (file) => {
+				const activeFile = this.app.workspace.getActiveFile();
+				if (activeFile && file.path === activeFile.path) {
+					void this.updateStatusBar();
 				}
 			})
 		);
@@ -164,28 +181,6 @@ export default class JupyMDPlugin extends Plugin {
 		this.executor.cleanup();
 	}
 
-	/** Atomically swap the active Python interpreter without requiring a restart. */
-	async updateInterpreter(newPath: string): Promise<void> {
-		this.settings.pythonInterpreter = newPath;
-		await this.saveSettings();
-
-		// Restart the code executor with the new interpreter
-		this.executor.cleanup();
-		this.executor = new CodeExecutor(this, newPath, this.app);
-
-		// Reinitialise file sync with the new interpreter
-		this.fileSync = new FileSync(this.app, newPath, this.settings);
-
-		this.updateStatusBar();
-	}
-
-	private updateStatusBar(): void {
-		if (!this.kernelStatusBarItem) return;
-		const interpreter = this.settings.pythonInterpreter;
-		const label = interpreter ? path.basename(interpreter) : "No kernel";
-		this.kernelStatusBarItem.setText(`🐍 ${label}`);
-		this.kernelStatusBarItem.setAttr("aria-label", `Python kernel: ${interpreter || "not set"} — click to change`);
-	}
 
 	async loadSettings() {
 		this.settings = Object.assign(
@@ -197,5 +192,38 @@ export default class JupyMDPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+
+	private async updateStatusBar(): Promise<void> {
+		if (!this.kernelStatusBarItem) return;
+
+		const activeFile = this.app.workspace.getActiveFile();
+		if (!(activeFile instanceof TFile)) {
+			this.kernelStatusBarItem.hide();
+			return;
+		}
+
+		const isPaired = await isNotebookPaired(this.app, activeFile);
+		if (!isPaired) {
+			this.kernelStatusBarItem.hide();
+			return;
+		}
+
+		const interpreter = this.settings.pythonInterpreter ? this.settings.pythonInterpreter : "No interpreter";
+		this.kernelStatusBarItem.show();
+		this.kernelStatusBarItem.setText(interpreter);
+		this.kernelStatusBarItem.setAttr("aria-label", `Current Python interpreter: ${interpreter} — click to change`);
+	}
+
+	async updateInterpreter(newPath: string): Promise<void> {
+		this.settings.pythonInterpreter = newPath;
+		await this.saveSettings();
+
+		this.executor.cleanup();
+		this.executor = new CodeExecutor(this, newPath, this.app);
+		this.fileSync = new FileSync(this.app, newPath, this.settings);
+
+		await this.updateStatusBar();
+		this.settingTab?.display();
 	}
 }

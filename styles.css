@@ -243,10 +243,8 @@ color: var(--text-muted);
 }
 
 .kernel-badge-venv   { background-color: rgba(80, 160, 255, 0.18); color: #5090e0; }
-.kernel-badge-conda  { background-color: rgba(80, 200, 120, 0.18); color: #40a060; }
-.kernel-badge-pyenv  { background-color: rgba(200, 140, 60,  0.18); color: #b07030; }
 .kernel-badge-system { background-color: rgba(140, 120, 220, 0.18); color: #8070c0; }
-.kernel-badge-other  { background-color: var(--background-modifier-border); color: var(--text-muted); }
+.kernel-badge-custom { background-color: rgba(230, 150, 60, 0.16); color: #c67a18; }
 
 .kernel-suggestion-bottom {
 display: flex;
